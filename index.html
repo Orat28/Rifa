@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marcador Rifa</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#4caf50" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #f8f8f8;
+      display: flex;
+      flex-direction: column;
+    }
+    h1 {
+      margin: 0;
+      padding: 2vh 0;
+      text-align: center;
+      font-size: 4vw;
+      flex: 0 0 auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 1vw;
+      flex: 1 1 auto;
+      padding: 2vw;
+      box-sizing: border-box;
+      width: 100%;
+      border: 4px solid #333;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+    }
+    .cell {
+      aspect-ratio: 1;
+      width: 100%;
+      background: white;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5vw;
+    }
+    .cell.marked {
+      background: #4caf50;
+      color: white;
+      border-color: #388e3c;
+    }
+    @media (max-width: 600px) {
+      .cell {
+        font-size: 5vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Rifa a beneficio Uniforme</h1>
+  <div class="grid" id="grid"></div>
+  <script>
+    const grid = document.getElementById("grid");
+    const savedMarks = JSON.parse(localStorage.getItem("markedNumbers")) || [];
+    for (let i = 0; i < 100; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.textContent = i.toString().padStart(2, "0");
+      if (savedMarks.includes(i)) {
+        cell.classList.add("marked");
+      }
+      cell.addEventListener("click", () => {
+        cell.classList.toggle("marked");
+        const index = savedMarks.indexOf(i);
+        if (cell.classList.contains("marked")) {
+          if (index === -1) savedMarks.push(i);
+        } else {
+          if (index !== -1) savedMarks.splice(index, 1);
+        }
+        localStorage.setItem("markedNumbers", JSON.stringify(savedMarks));
+      });
+      grid.appendChild(cell);
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(reg => console.log("Service Worker registrado", reg))
+        .catch(err => console.error("Error al registrar el Service Worker", err));
+    }
+  </script>
+</body>
+</html>
