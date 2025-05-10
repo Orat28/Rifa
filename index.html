@@ -20,13 +20,23 @@
       flex-direction: column;
     }
 
-    h1 {
-      margin: 0;
-      padding: 2vh 0;
+    header {
+      padding: 2vh;
       text-align: center;
-      font-size: 4vw;
-      height: 8vh;
       flex: 0 0 auto;
+      background-color: #4caf50;
+      color: white;
+    }
+
+    #titleInput {
+      font-size: 6vw;
+      font-weight: bold;
+      background: transparent;
+      border: none;
+      text-align: center;
+      color: white;
+      width: 100%;
+      outline: none;
     }
 
     .grid {
@@ -37,7 +47,7 @@
       padding: 1vw;
       box-sizing: border-box;
       width: 100%;
-      height: calc(100vh - 8vh);
+      height: calc(100vh - 12vh);
       border-radius: 12px;
       background-color: #fff;
     }
@@ -63,6 +73,9 @@
     }
 
     @media (max-width: 600px) {
+      #titleInput {
+        font-size: 8vw;
+      }
       .cell {
         font-size: 5vw;
       }
@@ -70,11 +83,16 @@
   </style>
 </head>
 <body>
-  <h1>Rifa a beneficio Uniforme</h1>
+  <header>
+    <input type="text" id="titleInput" value="Rifa a beneficio Uniforme" />
+  </header>
+
   <div class="grid" id="grid"></div>
+
   <script>
     const grid = document.getElementById("grid");
     const savedMarks = JSON.parse(localStorage.getItem("markedNumbers")) || [];
+
     for (let i = 0; i < 100; i++) {
       const cell = document.createElement("div");
       cell.className = "cell";
@@ -95,6 +113,18 @@
       grid.appendChild(cell);
     }
 
+    // Guardar título personalizado
+    const titleInput = document.getElementById("titleInput");
+    const savedTitle = localStorage.getItem("customTitle");
+    if (savedTitle) {
+      titleInput.value = savedTitle;
+    }
+
+    titleInput.addEventListener("input", () => {
+      localStorage.setItem("customTitle", titleInput.value);
+    });
+
+    // Service Worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("service-worker.js")
         .then(reg => console.log("Service Worker registrado", reg))
