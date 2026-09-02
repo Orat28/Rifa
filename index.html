@@ -10,10 +10,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
+      width: 100%;
       font-family: Arial, sans-serif;
       background: #f8f8f8;
       display: flex;
@@ -21,7 +26,7 @@
     }
 
     header {
-      padding: 2vh;
+      padding: 12px;
       text-align: center;
       flex: 0 0 auto;
       background-color: #4caf50;
@@ -29,7 +34,7 @@
     }
 
     #titleInput {
-      font-size: 6vw;
+      font-size: 1.5rem;
       font-weight: bold;
       background: transparent;
       border: none;
@@ -39,31 +44,33 @@
       outline: none;
     }
 
+    .grid-container {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
-      grid-template-rows: repeat(10, 1fr);
-      flex: 1 1 auto;
-      padding: 1vw;
-      box-sizing: border-box;
+      gap: 4px;
       width: 100%;
-      height: calc(100vh - 12vh);
-      border-radius: 12px;
       background-color: #fff;
     }
 
     .cell {
-      background: white;
+      aspect-ratio: 1;
+      background: #f0f0f0;
       border: 1px solid #ccc;
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
       font-weight: bold;
-      transition: 0.2s;
+      transition: background 0.15s ease, color 0.15s ease;
       user-select: none;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 3.5vw;
+      font-size: clamp(0.7rem, 2.5vw, 1.1rem);
     }
 
     .cell.marked {
@@ -72,12 +79,10 @@
       border-color: #388e3c;
     }
 
-    @media (max-width: 600px) {
-      #titleInput {
-        font-size: 8vw;
-      }
-      .cell {
-        font-size: 5vw;
+    /* Ajuste para pantallas pequeñas */
+    @media (max-width: 480px) {
+      .grid {
+        grid-template-columns: repeat(5, 1fr);
       }
     }
   </style>
@@ -87,44 +92,89 @@
     <input type="text" id="titleInput" value="Rifa a beneficio Uniforme" />
   </header>
 
-  <div class="grid" id="grid"></div>
+  <div class="grid-container">
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- Firebase Scripts (Compat SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <script>
-    const grid = document.getElementById("grid");
-    const savedMarks = JSON.parse(localStorage.getItem("markedNumbers")) || [];
+    // -----------------------------------------------------------
+    // 1. CONFIGURACIÓN DE FIREBASE (Reemplaza con tus claves)
+    // -----------------------------------------------------------
+    const firebaseConfig = {
+     apiKey: "AIzaSyD0epYhGDU-AIVtcUONhAjTswZ8ijlDAL8",
+  authDomain: "rifaapp-e3249.firebaseapp.com",
+  databaseURL: "https://rifaapp-e3249-default-rtdb.firebaseio.com",
+  projectId: "rifaapp-e3249",
+  storageBucket: "rifaapp-e3249.firebasestorage.app",
+  messagingSenderId: "695051637372",
+  appId: "1:695051637372:web:50194f550614379444eff9",
+  measurementId: "G-JDSBC1N1WG"
+};
 
-    for (let i = 0; i < 100; i++) {
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const marksRef = db.ref('markedNumbers');
+    const titleRef = db.ref('customTitle');
+
+    const TOTAL_NUMEROS = 200;
+    const grid = document.getElementById("grid");
+    const cells = {};
+
+    // -----------------------------------------------------------
+    // 2. GENERAR TABLERO DE 200 NÚMEROS (000 a 199)
+    // -----------------------------------------------------------
+    for (let i = 0; i < TOTAL_NUMEROS; i++) {
       const cell = document.createElement("div");
       cell.className = "cell";
-      cell.textContent = i.toString().padStart(2, "0");
-      if (savedMarks.includes(i)) {
-        cell.classList.add("marked");
-      }
+      // Formato a 3 dígitos (000, 001, ..., 199)
+      cell.textContent = i.toString().padStart(3, "0");
+
       cell.addEventListener("click", () => {
-        cell.classList.toggle("marked");
-        const index = savedMarks.indexOf(i);
-        if (cell.classList.contains("marked")) {
-          if (index === -1) savedMarks.push(i);
-        } else {
-          if (index !== -1) savedMarks.splice(index, 1);
-        }
-        localStorage.setItem("markedNumbers", JSON.stringify(savedMarks));
+        const isMarked = cell.classList.contains("marked");
+        // Si está marcado, lo borramos de la base de datos; si no, lo guardamos como true
+        marksRef.child(i).set(isMarked ? null : true);
       });
+
       grid.appendChild(cell);
+      cells[i] = cell;
     }
 
-    // Guardar título personalizado
-    const titleInput = document.getElementById("titleInput");
-    const savedTitle = localStorage.getItem("customTitle");
-    if (savedTitle) {
-      titleInput.value = savedTitle;
-    }
-
-    titleInput.addEventListener("input", () => {
-      localStorage.setItem("customTitle", titleInput.value);
+    // -----------------------------------------------------------
+    // 3. ESCUCHAR CAMBIOS EN TIEMPO REAL (Números)
+    // -----------------------------------------------------------
+    marksRef.on('value', (snapshot) => {
+      const markedData = snapshot.val() || {};
+      for (let i = 0; i < TOTAL_NUMEROS; i++) {
+        if (markedData[i]) {
+          cells[i].classList.add("marked");
+        } else {
+          cells[i].classList.remove("marked");
+        }
+      }
     });
 
-    // Service Worker
+    // -----------------------------------------------------------
+    // 4. SINCRONIZACIÓN DEL TÍTULO EN TIEMPO REAL
+    // -----------------------------------------------------------
+    const titleInput = document.getElementById("titleInput");
+
+    titleRef.on('value', (snapshot) => {
+      const titleVal = snapshot.val();
+      if (titleVal !== null) {
+        titleInput.value = titleVal;
+      }
+    });
+
+    titleInput.addEventListener("input", () => {
+      titleRef.set(titleInput.value);
+    });
+
+    // Registro de Service Worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("service-worker.js")
         .then(reg => console.log("Service Worker registrado", reg))
