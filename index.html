@@ -31,10 +31,11 @@
       flex: 0 0 auto;
       background-color: #4caf50;
       color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     #titleInput {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: bold;
       background: transparent;
       border: none;
@@ -42,6 +43,16 @@
       color: white;
       width: 100%;
       outline: none;
+    }
+
+    .counter-badge {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 12px;
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
     }
 
     .grid-container {
@@ -65,12 +76,14 @@
       border-radius: 4px;
       cursor: pointer;
       font-weight: bold;
-      transition: background 0.15s ease, color 0.15s ease;
+      transition: background 0.15s ease;
       user-select: none;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       font-size: clamp(0.7rem, 2.5vw, 1.1rem);
+      position: relative;
     }
 
     .cell.marked {
@@ -79,43 +92,150 @@
       border-color: #388e3c;
     }
 
-    /* Ajuste para pantallas pequeñas */
+    /* Punto indicador de datos cargados */
+    .cell.marked::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 5px;
+      height: 5px;
+      background-color: #fff;
+      border-radius: 50%;
+    }
+
     @media (max-width: 480px) {
       .grid {
         grid-template-columns: repeat(5, 1fr);
       }
     }
+
+    /* ESTILOS DEL MODAL (VENTANA EMERGENTE) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      width: 90%;
+      max-width: 360px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-primary { background: #4caf50; color: white; }
+    .btn-danger { background: #e53935; color: white; }
+    .btn-secondary { background: #ccc; color: #333; }
   </style>
 </head>
 <body>
+
   <header>
     <input type="text" id="titleInput" value="Rifa a beneficio Logistica" />
+    <div class="counter-badge">
+      Vendidos: <span id="soldCount">0</span> / 200
+    </div>
   </header>
 
   <div class="grid-container">
     <div class="grid" id="grid"></div>
   </div>
 
-  <!-- Firebase Scripts (Compat SDK) -->
+  <!-- Modal para Asignar / Cancelar Número -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3 id="modalTitle">Número #000</h3>
+      
+      <div class="form-group">
+        <label for="buyerInput">Nombre del Comprador:</label>
+        <input type="text" id="buyerInput" placeholder="Ej: Juan Pérez" />
+      </div>
+
+      <div class="form-group">
+        <label for="sellerInput">Nombre del Vendedor:</label>
+        <input type="text" id="sellerInput" placeholder="Ej: María" />
+      </div>
+
+      <div class="modal-actions" id="modalActions">
+        <!-- Los botones se generan dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <script>
-    // -----------------------------------------------------------
-    // 1. CONFIGURACIÓN DE FIREBASE (Reemplaza con tus claves)
-    // -----------------------------------------------------------
+    // 1. CONFIGURACIÓN DE FIREBASE
     const firebaseConfig = {
-     apiKey: "AIzaSyD0epYhGDU-AIVtcUONhAjTswZ8ijlDAL8",
-  authDomain: "rifaapp-e3249.firebaseapp.com",
-  databaseURL: "https://rifaapp-e3249-default-rtdb.firebaseio.com",
-  projectId: "rifaapp-e3249",
-  storageBucket: "rifaapp-e3249.firebasestorage.app",
-  messagingSenderId: "695051637372",
-  appId: "1:695051637372:web:50194f550614379444eff9",
-  measurementId: "G-JDSBC1N1WG"
+     apiKey: "AIzaSyD0epYhGDU-AIVtcUONhAjTswZ8ijlDAL8",
+  authDomain: "rifaapp-e3249.firebaseapp.com",
+  databaseURL: "https://rifaapp-e3249-default-rtdb.firebaseio.com",
+  projectId: "rifaapp-e3249",
+  storageBucket: "rifaapp-e3249.firebasestorage.app",
+  messagingSenderId: "695051637372",
+  appId: "1:695051637372:web:50194f550614379444eff9",
+  measurementId: "G-JDSBC1N1WG"
 };
-
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const marksRef = db.ref('markedNumbers');
@@ -123,44 +243,116 @@
 
     const TOTAL_NUMEROS = 200;
     const grid = document.getElementById("grid");
-    const cells = {};
+    const soldCountEl = document.getElementById("soldCount");
+    const modalOverlay = document.getElementById("modalOverlay");
+    const modalTitle = document.getElementById("modalTitle");
+    const buyerInput = document.getElementById("buyerInput");
+    const sellerInput = document.getElementById("sellerInput");
+    const modalActions = document.getElementById("modalActions");
 
-    // -----------------------------------------------------------
-    // 2. GENERAR TABLERO DE 200 NÚMEROS (000 a 199)
-    // -----------------------------------------------------------
+    const cells = {};
+    let currentSelectedNum = null;
+    let localData = {};
+
+    // 2. GENERAR TABLERO
     for (let i = 0; i < TOTAL_NUMEROS; i++) {
       const cell = document.createElement("div");
       cell.className = "cell";
-      // Formato a 3 dígitos (000, 001, ..., 199)
-      cell.textContent = i.toString().padStart(3, "0");
+      const formattedNum = i.toString().padStart(3, "0");
+      cell.textContent = formattedNum;
 
-      cell.addEventListener("click", () => {
-        const isMarked = cell.classList.contains("marked");
-        // Si está marcado, lo borramos de la base de datos; si no, lo guardamos como true
-        marksRef.child(i).set(isMarked ? null : true);
-      });
+      cell.addEventListener("click", () => openModal(i));
 
       grid.appendChild(cell);
       cells[i] = cell;
     }
 
-    // -----------------------------------------------------------
-    // 3. ESCUCHAR CAMBIOS EN TIEMPO REAL (Números)
-    // -----------------------------------------------------------
+    // 3. ABRIR MODAL
+    function openModal(num) {
+      currentSelectedNum = num;
+      const formattedNum = num.toString().padStart(3, "0");
+      const data = localData[num];
+
+      modalTitle.textContent = `Número #${formattedNum}`;
+
+      if (data) {
+        // El número ya está vendido
+        buyerInput.value = data.buyer || "";
+        sellerInput.value = data.seller || "";
+        buyerInput.disabled = true;
+        sellerInput.disabled = true;
+
+        modalActions.innerHTML = `
+          <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+          <button class="btn btn-danger" onclick="confirmRelease()">Desmarcar / Liberar</button>
+        `;
+      } else {
+        // El número está libre
+        buyerInput.value = "";
+        sellerInput.value = "";
+        buyerInput.disabled = false;
+        sellerInput.disabled = false;
+
+        modalActions.innerHTML = `
+          <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveNumber()">Guardar Venta</button>
+        `;
+      }
+
+      modalOverlay.classList.add("active");
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove("active");
+      currentSelectedNum = null;
+    }
+
+    // 4. GUARDAR O LIBERAR
+    function saveNumber() {
+      if (currentSelectedNum === null) return;
+
+      const buyer = buyerInput.value.trim();
+      const seller = sellerInput.value.trim();
+
+      marksRef.child(currentSelectedNum).set({
+        buyer: buyer || "Anónimo",
+        seller: seller || "Sin asignar",
+        timestamp: Date.now()
+      });
+
+      closeModal();
+    }
+
+    function confirmRelease() {
+      if (currentSelectedNum === null) return;
+
+      const formattedNum = currentSelectedNum.toString().padStart(3, "0");
+      const confirmDelete = confirm(`¿Estás seguro de que deseas desmarcar el número #${formattedNum}? Esta acción liberará el número.`);
+
+      if (confirmDelete) {
+        marksRef.child(currentSelectedNum).remove();
+        closeModal();
+      }
+    }
+
+    // 5. ESCUCHAR CAMBIOS EN TIEMPO REAL
     marksRef.on('value', (snapshot) => {
-      const markedData = snapshot.val() || {};
+      localData = snapshot.val() || {};
+      let totalVendidos = 0;
+
       for (let i = 0; i < TOTAL_NUMEROS; i++) {
-        if (markedData[i]) {
+        if (localData[i]) {
           cells[i].classList.add("marked");
+          totalVendidos++;
         } else {
           cells[i].classList.remove("marked");
         }
       }
+
+      soldCountEl.textContent = totalVendidos;
     });
 
-    // -----------------------------------------------------------
-    // 4. SINCRONIZACIÓN DEL TÍTULO EN TIEMPO REAL
-    // -----------------------------------------------------------
+    // 6. SINCRONIZACIÓN DEL TÍTULO
     const titleInput = document.getElementById("titleInput");
 
     titleRef.on('value', (snapshot) => {
@@ -174,7 +366,7 @@
       titleRef.set(titleInput.value);
     });
 
-    // Registro de Service Worker
+    // Service Worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("service-worker.js")
         .then(reg => console.log("Service Worker registrado", reg))
