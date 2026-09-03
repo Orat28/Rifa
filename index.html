@@ -55,6 +55,45 @@
       font-weight: 600;
     }
 
+    /* BARRA DE HERRAMIENTAS: FILTROS Y EXPORTAR */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .filter-buttons, .export-buttons {
+      display: flex;
+      gap: 4px;
+    }
+
+    .btn-filter, .btn-export {
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-filter.active {
+      background: #4caf50;
+      color: white;
+      border-color: #388e3c;
+    }
+
+    .btn-export {
+      background: #2196f3;
+      color: white;
+      border-color: #1976d2;
+    }
+
     .grid-container {
       flex: 1 1 auto;
       overflow-y: auto;
@@ -92,7 +131,6 @@
       border-color: #388e3c;
     }
 
-    /* Punto indicador de datos cargados */
     .cell.marked::after {
       content: '';
       position: absolute;
@@ -104,13 +142,24 @@
       border-radius: 50%;
     }
 
-    @media (max-width: 480px) {
+    .cell.hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 600px) {
       .grid {
         grid-template-columns: repeat(5, 1fr);
       }
+      .controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .filter-buttons, .export-buttons {
+        justify-content: center;
+      }
     }
 
-    /* ESTILOS DEL MODAL (VENTANA EMERGENTE) */
+    /* MODAL */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -141,46 +190,13 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
 
-    .modal h3 {
-      margin-top: 0;
-      color: #333;
-    }
-
-    .form-group {
-      margin-bottom: 12px;
-      text-align: left;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.85rem;
-      color: #666;
-      margin-bottom: 4px;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      border-radius: 4px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
+    .modal h3 { margin-top: 0; color: #333; }
+    .form-group { margin-bottom: 12px; text-align: left; }
+    .form-group label { display: block; font-size: 0.85rem; color: #666; margin-bottom: 4px; }
+    .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+    
+    .btn { flex: 1; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
     .btn-primary { background: #4caf50; color: white; }
     .btn-danger { background: #e53935; color: white; }
     .btn-secondary { background: #ccc; color: #333; }
@@ -195,28 +211,36 @@
     </div>
   </header>
 
+  <!-- CONTROLES DE FILTRO Y EXPORTACIÓN -->
+  <div class="controls-bar">
+    <div class="filter-buttons">
+      <button class="btn-filter active" onclick="setFilter('all', this)">Todos</button>
+      <button class="btn-filter" onclick="setFilter('free', this)">Libres</button>
+      <button class="btn-filter" onclick="setFilter('sold', this)">Vendidos</button>
+    </div>
+    <div class="export-buttons">
+      <button class="btn-export" onclick="exportToCSV()">Excel (CSV)</button>
+      <button class="btn-export" style="background:#ff9800; border-color:#e65100;" onclick="exportToPDF()">Imprimir / PDF</button>
+    </div>
+  </div>
+
   <div class="grid-container">
     <div class="grid" id="grid"></div>
   </div>
 
-  <!-- Modal para Asignar / Cancelar Número -->
+  <!-- Modal -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <h3 id="modalTitle">Número #000</h3>
-      
       <div class="form-group">
         <label for="buyerInput">Nombre del Comprador:</label>
         <input type="text" id="buyerInput" placeholder="Ej: Juan Pérez" />
       </div>
-
       <div class="form-group">
         <label for="sellerInput">Nombre del Vendedor:</label>
         <input type="text" id="sellerInput" placeholder="Ej: María" />
       </div>
-
-      <div class="modal-actions" id="modalActions">
-        <!-- Los botones se generan dinámicamente -->
-      </div>
+      <div class="modal-actions" id="modalActions"></div>
     </div>
   </div>
 
@@ -226,16 +250,17 @@
 
   <script>
     // 1. CONFIGURACIÓN DE FIREBASE
-    const firebaseConfig = {
-     apiKey: "AIzaSyD0epYhGDU-AIVtcUONhAjTswZ8ijlDAL8",
-  authDomain: "rifaapp-e3249.firebaseapp.com",
-  databaseURL: "https://rifaapp-e3249-default-rtdb.firebaseio.com",
-  projectId: "rifaapp-e3249",
-  storageBucket: "rifaapp-e3249.firebasestorage.app",
-  messagingSenderId: "695051637372",
-  appId: "1:695051637372:web:50194f550614379444eff9",
-  measurementId: "G-JDSBC1N1WG"
+      const firebaseConfig = {
+     apiKey: "AIzaSyD0epYhGDU-AIVtcUONhAjTswZ8ijlDAL8",
+  authDomain: "rifaapp-e3249.firebaseapp.com",
+  databaseURL: "https://rifaapp-e3249-default-rtdb.firebaseio.com",
+  projectId: "rifaapp-e3249",
+  storageBucket: "rifaapp-e3249.firebasestorage.app",
+  messagingSenderId: "695051637372",
+  appId: "1:695051637372:web:50194f550614379444eff9",
+  measurementId: "G-JDSBC1N1WG"
 };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const marksRef = db.ref('markedNumbers');
@@ -253,21 +278,19 @@
     const cells = {};
     let currentSelectedNum = null;
     let localData = {};
+    let currentFilter = 'all';
 
     // 2. GENERAR TABLERO
     for (let i = 0; i < TOTAL_NUMEROS; i++) {
       const cell = document.createElement("div");
       cell.className = "cell";
-      const formattedNum = i.toString().padStart(3, "0");
-      cell.textContent = formattedNum;
-
+      cell.textContent = i.toString().padStart(3, "0");
       cell.addEventListener("click", () => openModal(i));
-
       grid.appendChild(cell);
       cells[i] = cell;
     }
 
-    // 3. ABRIR MODAL
+    // 3. ABRIR / CERRAR MODAL
     function openModal(num) {
       currentSelectedNum = num;
       const formattedNum = num.toString().padStart(3, "0");
@@ -276,7 +299,6 @@
       modalTitle.textContent = `Número #${formattedNum}`;
 
       if (data) {
-        // El número ya está vendido
         buyerInput.value = data.buyer || "";
         sellerInput.value = data.seller || "";
         buyerInput.disabled = true;
@@ -287,7 +309,6 @@
           <button class="btn btn-danger" onclick="confirmRelease()">Desmarcar / Liberar</button>
         `;
       } else {
-        // El número está libre
         buyerInput.value = "";
         sellerInput.value = "";
         buyerInput.disabled = false;
@@ -307,10 +328,8 @@
       currentSelectedNum = null;
     }
 
-    // 4. GUARDAR O LIBERAR
     function saveNumber() {
       if (currentSelectedNum === null) return;
-
       const buyer = buyerInput.value.trim();
       const seller = sellerInput.value.trim();
 
@@ -325,17 +344,123 @@
 
     function confirmRelease() {
       if (currentSelectedNum === null) return;
-
       const formattedNum = currentSelectedNum.toString().padStart(3, "0");
-      const confirmDelete = confirm(`¿Estás seguro de que deseas desmarcar el número #${formattedNum}? Esta acción liberará el número.`);
-
-      if (confirmDelete) {
+      if (confirm(`¿Estás seguro de que deseas desmarcar el número #${formattedNum}?`)) {
         marksRef.child(currentSelectedNum).remove();
         closeModal();
       }
     }
 
-    // 5. ESCUCHAR CAMBIOS EN TIEMPO REAL
+    // 4. FILTROS DE VISUALIZACIÓN
+    function setFilter(filterType, btnEl) {
+      currentFilter = filterType;
+      document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+      btnEl.classList.add('active');
+      applyFilter();
+    }
+
+    function applyFilter() {
+      for (let i = 0; i < TOTAL_NUMEROS; i++) {
+        const isMarked = !!localData[i];
+        const cell = cells[i];
+
+        if (currentFilter === 'all') {
+          cell.classList.remove('hidden');
+        } else if (currentFilter === 'free') {
+          cell.classList.toggle('hidden', isMarked);
+        } else if (currentFilter === 'sold') {
+          cell.classList.toggle('hidden', !isMarked);
+        }
+      }
+    }
+
+    // 5. EXPORTAR A EXCEL (CSV)
+    function exportToCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM para acentos en Excel
+      csvContent += "Numero,Estado,Comprador,Vendedor\n";
+
+      for (let i = 0; i < TOTAL_NUMEROS; i++) {
+        const numStr = i.toString().padStart(3, "0");
+        const data = localData[i];
+        if (data) {
+          csvContent += `"${numStr}","VENDIDO","${data.buyer || 'Anónimo'}","${data.seller || 'Sin asignar'}"\n`;
+        } else {
+          csvContent += `"${numStr}","LIBRE","",""\n`;
+        }
+      }
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `rifa_ventas_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // 6. EXPORTAR A PDF / IMPRIMIR LISTA DE SORTEO
+    function exportToPDF() {
+      const printWindow = window.open('', '_blank');
+      const title = document.getElementById("titleInput").value;
+
+      let rows = '';
+      for (let i = 0; i < TOTAL_NUMEROS; i++) {
+        const numStr = i.toString().padStart(3, "0");
+        const data = localData[i];
+        const estado = data ? 'VENDIDO' : 'LIBRE';
+        const comprador = data ? (data.buyer || 'Anónimo') : '-';
+        const vendedor = data ? (data.seller || 'Sin asignar') : '-';
+        const bg = data ? '#e8f5e9' : '#ffffff';
+
+        rows += `
+          <tr style="background-color: ${bg};">
+            <td style="padding: 6px; border: 1px solid #ccc; text-align: center; font-weight: bold;">${numStr}</td>
+            <td style="padding: 6px; border: 1px solid #ccc; text-align: center;">${estado}</td>
+            <td style="padding: 6px; border: 1px solid #ccc;">${comprador}</td>
+            <td style="padding: 6px; border: 1px solid #ccc;">${vendedor}</td>
+          </tr>
+        `;
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Planilla de Sorteo - ${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { text-align: center; margin-bottom: 5px; }
+            p { text-align: center; color: #666; font-size: 0.9rem; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #4caf50; color: white; padding: 8px; border: 1px solid #ccc; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <p>Planilla Oficial para el Día del Sorteo - Generado el ${new Date().toLocaleDateString()}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Nº</th>
+                <th>Estado</th>
+                <th>Comprador</th>
+                <th>Vendedor</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() { window.print(); }
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+
+    // 7. ESCUCHAR CAMBIOS EN TIEMPO REAL
     marksRef.on('value', (snapshot) => {
       localData = snapshot.val() || {};
       let totalVendidos = 0;
@@ -350,9 +475,10 @@
       }
 
       soldCountEl.textContent = totalVendidos;
+      applyFilter();
     });
 
-    // 6. SINCRONIZACIÓN DEL TÍTULO
+    // 8. SINCRONIZACIÓN DEL TÍTULO
     const titleInput = document.getElementById("titleInput");
 
     titleRef.on('value', (snapshot) => {
