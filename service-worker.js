@@ -1,4 +1,4 @@
-const CACHE_NAME = "rifa-cache-v11"; // <--- CAMBIA ESTE NÚMERO (v2, v3, v4...) CADA VEZ QUE MODIFIQUES EL HTML/CSS
+const CACHE_NAME = "rifa-cache-v12"; // <--- CAMBIA ESTE NÚMERO (v2, v3, v4...) CADA VEZ QUE MODIFIQUES EL HTML/CSS
 
 const ASSETS = [
   "./",
