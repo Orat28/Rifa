@@ -54,7 +54,7 @@ pinInput.addEventListener("keyup", (e) => {
 });
 
 // 3. GENERAR TABLERO (Del 000 al 199)
-for (let i = 0; i <= TOTAL_NUMEROS; i++) {
+for (let i = 0; i < TOTAL_NUMEROS; i++) {
   const cell = document.createElement("div");
   cell.className = "cell";
   cell.textContent = i.toString().padStart(3, "0");
