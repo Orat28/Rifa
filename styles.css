@@ -18,7 +18,7 @@ body {
 header {
   padding: 14px 10px;
   text-align: center;
-  background: linear-gradient(135deg, #0AFFCD, #00ABA8);
+  background: linear-gradient(135deg, #00ABA8, #148583);
   color: white;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
@@ -178,7 +178,7 @@ header {
 .pin-overlay {
   opacity: 1;
   pointer-events: auto;
-  background: linear-gradient(135deg, #1b5e20, #388e3c);
+  background: linear-gradient(135deg, #01ABA8, #148583);
   z-index: 2000;
 }
 
