@@ -53,8 +53,8 @@ pinInput.addEventListener("keyup", (e) => {
   if (e.key === "Enter") checkPin();
 });
 
-// 3. GENERAR TABLERO (Del 001 al 200)
-for (let i = 1; i <= TOTAL_NUMEROS; i++) {
+// 3. GENERAR TABLERO (Del 000 al 199)
+for (let i = 0; i <= TOTAL_NUMEROS; i++) {
   const cell = document.createElement("div");
   cell.className = "cell";
   cell.textContent = i.toString().padStart(3, "0");
@@ -133,7 +133,7 @@ function setFilter(filterType, btnEl) {
 }
 
 function applyFilter() {
-  for (let i = 1; i <= TOTAL_NUMEROS; i++) {
+  for (let i = 0; i <= TOTAL_NUMEROS; i++) {
     const isMarked = !!localData[i];
     const cell = cells[i];
 
@@ -152,7 +152,7 @@ function exportToCSV() {
   let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
   csvContent += "Numero,Estado,Comprador,Vendedor\n";
 
-  for (let i = 1; i <= TOTAL_NUMEROS; i++) {
+  for (let i = 0; i <= TOTAL_NUMEROS; i++) {
     const numStr = i.toString().padStart(3, "0");
     const data = localData[i];
     if (data) {
@@ -177,7 +177,7 @@ function exportToPDF() {
   const title = document.getElementById("titleInput").value;
 
   let rows = '';
-  for (let i = 1; i <= TOTAL_NUMEROS; i++) {
+  for (let i = 0; i <= TOTAL_NUMEROS; i++) {
     const numStr = i.toString().padStart(3, "0");
     const data = localData[i];
     const estado = data ? 'VENDIDO' : 'LIBRE';
@@ -262,7 +262,7 @@ marksRef.on('value', (snapshot) => {
   localData = snapshot.val() || {};
   let totalVendidos = 0;
 
-  for (let i = 1; i <= TOTAL_NUMEROS; i++) {
+  for (let i = 0; i <= TOTAL_NUMEROS; i++) {
     if (localData[i]) {
       cells[i].classList.add("marked");
       totalVendidos++;
