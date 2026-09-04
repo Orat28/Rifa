@@ -34,13 +34,12 @@ let localData = {};
 let currentFilter = 'all';
 
 // 2. VALIDACIÓN DE PIN
-if (sessionStorage.getItem("pinValido") === "true") {
+if (localStorage.getItem("pinValido") === "true") {
   pinOverlay.style.display = "none";
 }
-
 function checkPin() {
   if (pinInput.value === PIN_CORRECTO) {
-    sessionStorage.setItem("pinValido", "true");
+    localStorage.setItem("pinValido", "true");
     pinOverlay.style.display = "none";
   } else {
     alert("PIN incorrecto. Intenta de nuevo.");
